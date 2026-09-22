@@ -1,0 +1,4 @@
+# 仅检查业务源码，构建产物/依赖不参与静态检查
+dist/
+node_modules/
+coverage/

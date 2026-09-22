@@ -16,6 +16,25 @@ docker-compose logs -f
 docker-compose down
 ```
 
+### 用户端可复现基线（开发 / 构建 / 端口 / 容器）
+
+用户端（`frontend-user`）的启动、构建、环境变量、端口与容器约束已固化为脚本基线，详见
+[`frontend-user/BASELINE.md`](./frontend-user/BASELINE.md)。对缺少依赖、配置缺失、端口占用、
+构建失败、产物缺失均有统一退出码与提示；检查/冒烟结束后不残留服务，不改写业务源码。
+
+| 场景 | 命令 | 说明 |
+|------|------|------|
+| 只读基线检查 | `cd frontend-user && npm run check:dev`（生产：`npm run check:prod`） | 依赖与平台匹配、环境变量、端口 |
+| 开发启动（固定 8080，占用即失败） | `npm run dev` 或 `bash scripts/dev.sh`（冒烟：`npm run dev:smoke`） | 退出自动回收进程 |
+| 生产构建 + 产物/HTTP 冒烟 | `bash scripts/build.sh --verify`（npm：`npm run build:verify`） | 构建失败退出码 5，产物缺失 6 |
+| 本地预览产物（8090） | `bash scripts/preview.sh` | 退出自动回收进程 |
+| 容器一键构建/验证/停止 | `bash scripts/container.sh up` / `verify` / `down` | 8081→80，含 HEALTHCHECK |
+
+端口基线：**dev 8080**、**本地 preview 8090**、**容器 8081→80**（compose 固定映射）。
+统一退出码：`2` 缺少依赖/平台不匹配、`3` 端口占用、`4` 配置缺失、`5` 构建失败、`6` 产物缺失/入口检查失败、`7` 服务未就绪。
+
+> 现有命令 `npm run dev` / `build` / `preview` / `test` 与默认 Mock 数据继续可用，基线脚本仅做检查与包装。
+
 ### ARM架构兼容性验证
 
 本项目使用的基础镜像均支持多架构（AMD64/ARM64）：
@@ -51,7 +70,7 @@ docker buildx build --platform linux/amd64,linux/arm64 -t billiard-user:latest .
 
 | 服务 | 端口 | 描述 |
 |------|------|------|
-| frontend-user | 8081 | 用户端前端 |
+| frontend-user | 8081（容器）/ 8080（本地 `npm run dev`） | 用户端前端 |
 
 访问地址：http://localhost:8081
 

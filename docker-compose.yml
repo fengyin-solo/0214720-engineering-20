@@ -5,10 +5,21 @@ services:
     build:
       context: ./frontend-user
       dockerfile: Dockerfile
+    image: billiard-frontend-user:latest
     container_name: billiard-frontend-user
     ports:
+      # 固定映射基线：宿主机 8081 -> 容器内 80；端口被占用时 up 直接失败，不自动改端口
       - "8081:80"
     restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     networks:
       - billiard-network
 

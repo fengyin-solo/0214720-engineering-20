@@ -1,0 +1,18 @@
+# 依赖与产物必须在镜像内重新构建，防止宿主席平台原生模块污染镜像
+# （如 macOS 的 @rollup/rollup-darwin-arm64 进入 Linux 镜像会导致 vite build 失败）
+node_modules
+dist
+.git
+.gitignore
+coverage
+.env.local
+.env.*.local
+*.log
+npm-debug.log*
+.DS_Store
+.idea
+.vscode
+scripts
+README.md
+Dockerfile
+.dockerignore

@@ -10,7 +10,14 @@
     "format": "prettier --write src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "check:dev": "bash scripts/check.sh",
+    "check:prod": "bash scripts/check.sh production",
+    "dev:smoke": "bash scripts/dev.sh --smoke",
+    "build:verify": "bash scripts/build.sh --verify",
+    "container:up": "bash scripts/container.sh up",
+    "container:verify": "bash scripts/container.sh verify",
+    "container:down": "bash scripts/container.sh down"
   },
   "dependencies": {
     "vue": "^3.4.0",
