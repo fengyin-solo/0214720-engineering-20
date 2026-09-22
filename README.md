@@ -16,6 +16,34 @@ docker-compose logs -f
 docker-compose down
 ```
 
+### 可复现基线（用户端）
+
+用户端（`frontend-user/`）的开发启动、构建、环境变量、端口与容器运行约束已固化为一条可复现基线，任何一项不满足都会**明确报错、给出修复指引并以非零码退出**：
+
+```bash
+cd frontend-user
+npm ci                 # 按锁文件安装（首次或跨平台拷贝仓库后必须执行）
+npm run baseline       # 全量基线：运行时/依赖/环境变量/端口/构建/产物/开发冒烟/容器约束
+```
+
+基线固化的约束：
+
+| 类别 | 基线值 / 规则 | 不满足时的明确结果 |
+|------|--------------|-------------------|
+| Node 运行时 | Node.js >= 18（推荐 20 LTS） | FAIL：提示安装版本 |
+| 依赖 | `package-lock.json`（v2/v3）+ `node_modules` 与当前平台/架构匹配 | FAIL：提示 `rm -rf node_modules && npm ci`（跨平台拷贝 node_modules 会直接暴露，如 rollup 原生绑定） |
+| 环境变量 | `.env.development` / `.env.production` / `.env.example` 必须含 `VITE_APP_TITLE`、`VITE_USE_MOCK`(true/false)、`VITE_API_BASE_URL`、`VITE_LOG_LEVEL`(debug/info/warn/error) | FAIL：指出缺失文件/变量及非法取值 |
+| 开发端口 | `8080/tcp`，`strictPort`（占用即失败，不静默换端口） | FAIL：提示端口被占用需先释放 |
+| 构建 | `npm run build` 必须成功 | FAIL：回显末尾构建日志 |
+| 产物 | `dist/index.html` + `dist/assets/*.js`、`*.css` 且 HTML 引用 JS | FAIL：产物缺失/不完整时提示重新构建 |
+| 开发冒烟 | `npm run dev` 60s 内在 8080 就绪；`/`、`/tables`、`/courses`、`/competitions`、`/shop`、`/tasks`、`/profile` 均返回 SPA 外壳；`main.js` 与 7 个视图经 Vite 编译可加载 | FAIL：指出不可达的入口或编译错误 |
+| 无残留 | 冒烟结束自动关停整个进程组并复核 8080 释放 | FAIL：端口仍被占用时给出手动清理命令 |
+| 容器 | 多架构镜像 `node:20-alpine` + `nginx:1.25-alpine`；镜像内 `npm ci` + `npm run build`；容器监听 80；compose 固定 `8081:80` + healthcheck；`.dockerignore` 排除 `node_modules/`、`dist/`；nginx SPA 回退 | FAIL：逐项指出缺失的容器约束 |
+
+可选参数：`--skip-build`（跳过构建/产物）、`--skip-smoke`（跳过开发服务器）、`--skip-container`（跳过容器静态约束）；`npm run baseline:check` 只做快速静态校验。
+
+> 说明：基线脚本只做校验与自行拉起/关停冒烟服务，**不修改任何业务源码**；现有 `npm run dev` / `build` / `preview` / `test` 命令与默认 Mock 数据保持不变（`VITE_USE_MOCK=true`，测试账号 user/123456）。
+
 ### ARM架构兼容性验证
 
 本项目使用的基础镜像均支持多架构（AMD64/ARM64）：
@@ -410,9 +438,14 @@ async function request(url, options) {
 
 ```bash
 cd frontend-user
-npm install
-npm run dev      # 本地开发
-npm run lint     # 代码检查
-npm run test     # 运行测试
-npm run build    # 构建生产版本
+npm ci            # 按锁文件可复现安装（跨平台/跨机器拷贝仓库后务必执行）
+npm run dev       # 本地开发，固定 http://localhost:8080 （strictPort，占用即报错）
+npm run baseline  # 一键复现基线校验（依赖/环境变量/端口/构建/产物/启动冒烟/容器约束）
+npm run lint      # 代码检查（自动修复）；npm run lint:check 为只读检查
+npm run test      # 运行测试
+npm run build     # 构建生产版本（产物 dist/）
+npm run preview   # 本地预览构建产物，固定 http://localhost:4173
 ```
+
+端口约定：开发服务器 `8080`、preview `4173` 仅用于本地；容器（nginx）内部监听 `80`，由 docker-compose 固定映射到宿主机 `8081`。
+

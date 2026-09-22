@@ -15,8 +15,8 @@ WORKDIR /app
 # 复制依赖文件
 COPY package*.json ./
 
-# 安装依赖
-RUN npm install
+# 安装依赖（按 package-lock.json 可复现安装，跨架构在容器内拉取对应原生依赖）
+RUN npm ci
 
 # 复制源代码
 COPY . .

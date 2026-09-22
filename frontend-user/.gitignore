@@ -1,0 +1,20 @@
+# 依赖
+node_modules/
+
+# 构建产物（vite build）
+dist/
+coverage/
+
+# 本地环境覆盖（.env.development / .env.production 仍需提交）
+.env.local
+.env.*.local
+
+# 日志与缓存
+*.log
+npm-debug.log*
+.eslintcache
+
+# 编辑器/系统
+.vscode/
+.idea/
+.DS_Store

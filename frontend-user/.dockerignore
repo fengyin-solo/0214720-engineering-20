@@ -1,0 +1,21 @@
+# 构建上下文排除项：避免宿主任意平台/架构的 node_modules 和旧产物污染镜像
+node_modules/
+dist/
+coverage/
+
+# 本地环境覆盖与日志
+.env.local
+.env.*.local
+npm-debug.log*
+*.log
+
+# 编辑器/系统文件
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Git 与基线脚本无需进入镜像
+.git/
+.gitignore
+scripts/

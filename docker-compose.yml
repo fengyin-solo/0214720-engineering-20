@@ -5,10 +5,19 @@ services:
     build:
       context: ./frontend-user
       dockerfile: Dockerfile
+    image: billiard-frontend-user:latest
     container_name: billiard-frontend-user
     ports:
+      # 宿主机 8081 → 容器内 nginx 80，端口固定，占用即启动失败
       - "8081:80"
     restart: unless-stopped
+    healthcheck:
+      # nginx:alpine 自带 wget；页面入口必须返回 200，否则容器标记为 unhealthy
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - billiard-network
 
